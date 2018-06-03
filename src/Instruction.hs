@@ -182,12 +182,12 @@ defCircuitInstructions (instruction@(Pragma _) : instructions) = circuitInstruct
 --Circuit call
 showCallCircuit :: (Floating a, Show a, Ord a) => Circuit a -> [Either Quantum (Classical a)] -> String
 showCallCircuit (Circuit name _ _) [] = name
-showCallCircuit (Circuit name parameters _) arguments = name ++ callCircuitParameters parameters arguments
+showCallCircuit (Circuit name parameters _) arguments = name ++ callCircuitArguments parameters arguments
 
-callCircuitParameters :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Either Quantum (Classical a)] -> String
-callCircuitParameters [] _ = []
-callCircuitParameters (Left (MetaQubitRegister _) : parameters) (Left q@(QubitRegister _) : arguments) = " " ++ (show q) ++ callCircuitParameters parameters arguments
-callCircuitParameters (Right (RealConstant _) : parameters) (Right c@(RealConstant _) : arguments) = " " ++ (show c) ++ callCircuitParameters parameters arguments
-callCircuitParameters (Right (ComplexConstant _) : parameters) (Right c@(ComplexConstant _) : arguments) = " " ++ (show c) ++ callCircuitParameters parameters arguments
-callCircuitParameters (Right (MetaRegister _) : parameters) (Right r@(Register _) : arguments) = " " ++ (show r) ++ callCircuitParameters parameters arguments
-callCircuitParameters (Right (MetaRegister _) : parameters) (Right r@(Range _ _) : arguments) = " " ++ (show r) ++ callCircuitParameters parameters arguments
+callCircuitArguments :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Either Quantum (Classical a)] -> String
+callCircuitArguments [] _ = []
+callCircuitArguments (Left (MetaQubitRegister _) : parameters) (Left q@(QubitRegister _) : arguments) = " " ++ (show q) ++ callCircuitArguments parameters arguments
+callCircuitArguments (Right (RealConstant _) : parameters) (Right c@(RealConstant _) : arguments) = " " ++ (show c) ++ callCircuitArguments parameters arguments
+callCircuitArguments (Right (ComplexConstant _) : parameters) (Right c@(ComplexConstant _) : arguments) = " " ++ (show c) ++ callCircuitArguments parameters arguments
+callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Register _) : arguments) = " " ++ (show r) ++ callCircuitArguments parameters arguments
+callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Range _ _) : arguments) = " " ++ (show r) ++ callCircuitArguments parameters arguments

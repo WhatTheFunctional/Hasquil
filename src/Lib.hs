@@ -13,6 +13,11 @@ testCircuit = let parameters@[Left a, Left b] = [Left (MetaQubitRegister "a"), L
                                   (CNot a b)]
               in Circuit "BELL" parameters instructions
 
+testRXCircuit :: (Floating a, Show a, Ord a) => Circuit a
+testRXCircuit = let parameters@[Left a] = [Left (MetaQubitRegister "a")]
+                    instructions = [(RX (ComplexConstant (5.0 :+ 10.0)) a)]
+                in Circuit "TESTRX" parameters instructions
+
 compile :: IO ()
 compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ QubitRegister 10) >>
@@ -26,4 +31,5 @@ compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ Measure (QubitRegister 4)) >>
           putStrLn (show $ MeasureOut (QubitRegister 4) (Register 5)) >>
           putStrLn (show $ DefCircuit testCircuit) >>
-          putStrLn (show $ CallCircuit testCircuit [Left (QubitRegister 5), Left (QubitRegister 3)])
+          putStrLn (show $ CallCircuit testCircuit [Left (QubitRegister 5), Left (QubitRegister 3)]) >>
+          putStrLn (show $ DefCircuit testRXCircuit) 
