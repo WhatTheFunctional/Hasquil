@@ -105,6 +105,7 @@ defCircuitParameters [] instructions = ":\n" ++ (defCircuitInstructions instruct
 defCircuitParameters (Left r@(MetaQubitRegister _) : parameters) instructions = " " ++ (show  r) ++ (defCircuitParameters parameters instructions)
 defCircuitParameters (Right r@(MetaRegister _) : parameters) instructions = " " ++ (show r) ++ (defCircuitParameters parameters instructions)
 
+circuitInstruction :: (Floating a, Show a, Ord a) => [Instruction a] -> String
 circuitInstruction (instruction : instructions) = "    " ++ (show instruction) ++ "\n" ++ (defCircuitInstructions instructions)
 
 defCircuitInstructions :: (Floating a, Show a, Ord a) => [Instruction a] -> String
