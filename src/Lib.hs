@@ -7,6 +7,12 @@ import Data.Complex
 import Register
 import Instruction
 
+testCircuit :: (Floating a, Show a, Ord a) => Circuit a
+testCircuit = let parameters@[Left a, Left b] = [Left (MetaQubitRegister "a"), Left (MetaQubitRegister "b")]
+                  instructions = [(Hadamard a),
+                                  (CNot a b)]
+              in Circuit "BELL" parameters instructions
+
 compile :: IO ()
 compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ QubitRegister 10) >>
@@ -17,5 +23,7 @@ compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ ComplexConstant ((-4.0) :+ (-6.0))) >>
           putStrLn (show $ CNot (QubitRegister 0) (QubitRegister 1)) >>
           putStrLn (show $ PSwap (ComplexConstant (5.0 :+ (-3.2))) (QubitRegister 0) (QubitRegister 1)) >>
-          putStrLn (show $ Measure (QubitRegister 4) Nothing) >>
-          putStrLn (show $ Measure (QubitRegister 4) (Just (Register 5)))
+          putStrLn (show $ Measure (QubitRegister 4)) >>
+          putStrLn (show $ MeasureOut (QubitRegister 4) (Register 5)) >>
+          putStrLn (show $ DefCircuit testCircuit) >>
+          putStrLn (show $ CallCircuit testCircuit [Left (QubitRegister 5), Left (QubitRegister 3)])
