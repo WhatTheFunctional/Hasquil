@@ -33,3 +33,23 @@ addRegisters carry temp a b r
                                                                 Right (Register y),
                                                                 Right (Register z)])
                                                                (zip3 [a..(a + 31)] [b..(b + 31)] [r..(r + 31)]))
+
+ifC :: (Floating a, Show a, Ord a) => String -> String -> Classical a -> [Instruction a] -> [Instruction a] -> [Instruction a]
+ifC thenLabel endLabel c x y = (JumpWhen thenLabel c) :
+                               y ++
+                               [(Jump endLabel),
+                                (Label thenLabel)] ++
+                               x ++
+                               [(Label endLabel)]
+
+whileC :: (Floating a, Show a, Ord a) => String -> String -> Classical a -> [Instruction a] -> [Instruction a]
+whileC conditionLabel loopLabel c x = [(Jump conditionLabel),
+                                       (Label loopLabel)] ++
+                                      x ++
+                                      [(Label conditionLabel),
+                                       (JumpWhen loopLabel c)]
+
+doWhileC :: (Floating a, Show a, Ord a) => String -> Classical a -> [Instruction a] -> [Instruction a]
+doWhileC whileLabel c x = (Label whileLabel) :
+                          x ++
+                          [(JumpWhen whileLabel c)]
