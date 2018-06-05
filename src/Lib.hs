@@ -4,6 +4,7 @@
 module Lib (compile) where
 
 import Data.Complex
+import Data.List
 import Register
 import Instruction
 import ClassicalCircuit
@@ -41,10 +42,10 @@ compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ DefCircuit adder) >>
           putStrLn (show $ CallCircuit adder [Right (Register 0), Right (Register 1), Right (Register 2), Right (Register 3), Right (Register 4)]) >>
           --Load the integer 53 into registers [0-31]
-          putStrLn (loadIntToRegisters 53 0) >>
+          putStrLn (intercalate "\n" (fmap show (loadIntToRegisters 53 0))) >>
           --Load the integer 18 into registers [32-63]
-          putStrLn (loadIntToRegisters 18 32) >>
+          putStrLn (intercalate "\n" (fmap show (loadIntToRegisters 18 32))) >>
           --Add [0-31] + [32-63] into [64-95]
           let carry = 128
               temp = 129
-          in putStrLn (addRegisters carry temp 0 32 64)
+          in putStrLn (intercalate "\n" (fmap show (addRegisters carry temp 0 32 64)))

@@ -12,27 +12,27 @@ import Instruction
 import ClassicalCircuit
 import QuantumCircuit
 
-loadIntToRegisters :: Int -> Int -> String
-loadIntToRegisters x r = loadIntBit x r 0 ""
+loadIntToRegisters :: (Floating a, Show a, Ord a) => Int -> Int -> [Instruction a]
+loadIntToRegisters x r = loadIntBit x r 0 []
 
-loadIntBit :: Int -> Int -> Int -> String -> String
+loadIntBit :: (Floating a, Show a, Ord a) => Int -> Int -> Int -> [Instruction a] -> [Instruction a]
 loadIntBit x r b commands
     | b < 32 = if (testBit x b)
-               then (loadIntBit x r (b + 1) (commands ++ (show $ ITrue (Register (r + b))) ++ "\n"))
-               else (loadIntBit x r (b + 1) (commands ++ (show $ IFalse (Register (r + b))) ++ "\n"))
+               then (loadIntBit x r (b + 1) (commands ++ [(ITrue (Register (r + b)))]))
+               else (loadIntBit x r (b + 1) (commands ++ [(IFalse (Register (r + b)))]))
     | otherwise = commands
 
-addRegisters :: Int -> Int -> Int -> Int -> Int -> String
+addRegisters :: (Floating a, Show a, Ord a) => Int -> Int -> Int -> Int -> Int -> [Instruction a]
 addRegisters carry temp a b r
-    = (show $ IFalse (Register carry)) ++ "\n" ++
-      (show $ IFalse (Register temp)) ++ "\n" ++
-      intercalate "\n" (fmap (\(x, y, z) -> show $ CallCircuit adder
-                                                               [Right (Register carry),
-                                                                Right (Register temp),
-                                                                Right (Register x),
-                                                                Right (Register y),
-                                                                Right (Register z)])
-                                                               (zip3 [a..(a + 31)] [b..(b + 31)] [r..(r + 31)]))
+    = (IFalse (Register carry)) :
+      (IFalse (Register temp)) :
+      (fmap (\(x, y, z) -> (CallCircuit adder
+                                       [Right (Register carry),
+                                        Right (Register temp),
+                                        Right (Register x),
+                                        Right (Register y),
+                                        Right (Register z)]))
+                                       (zip3 [a..(a + 31)] [b..(b + 31)] [r..(r + 31)]))
 
 ifC :: (Floating a, Show a, Ord a) => String -> String -> Classical a -> [Instruction a] -> [Instruction a] -> [Instruction a]
 ifC thenLabel endLabel c x y = (JumpWhen thenLabel c) :
