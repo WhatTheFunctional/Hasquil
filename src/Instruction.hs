@@ -72,132 +72,135 @@ instance (Floating a, Show a, Ord a) => Show (Instruction a) where
     show (ISwap q0 q1) = "ISWAP " ++ (show q0) ++ " " ++ (show q1)
     show (CSwap q0 q1 q2 q3) = "CSWAP " ++ (show q0) ++ " " ++ (show q1) ++ (show q2) ++ " " ++ (show q3)
     show (Measure q) = "MEASURE " ++ (show q)
-    show (MeasureOut q (Register r)) = "MEASURE " ++ (show q) ++ " " ++ (show (Register r))
-    show (MeasureOut q (MetaRegister m)) = "MEASURE " ++ (show q) ++ " " ++ (show (MetaRegister m))
+    show (MeasureOut q r) = "MEASURE " ++ (show q) ++ " " ++ (show r)
     show (Reset) = "RESET"
     show Halt = "HALT"
     show (Jump s) = "JUMP @" ++ (fmap toUpper s)
-    show (JumpWhen s (Register r)) = "JUMP-WHEN @" ++ (fmap toUpper s) ++ " " ++ (show (Register r))
-    show (JumpWhen s (MetaRegister r)) = "JUMP-WHEN @" ++ (fmap toUpper s) ++ " " ++ (show (MetaRegister r))
-    show (JumpUnless s (Register r)) = "JUMP-UNLESS @" ++ (fmap toUpper s) ++ " " ++ (show (Register r))
-    show (JumpUnless s (MetaRegister r)) = "JUMP-UNLESS @" ++ (fmap toUpper s) ++ " " ++ (show (MetaRegister r))
+    show (JumpWhen s r) = "JUMP-WHEN @" ++ (fmap toUpper s) ++ " " ++ (show r)
+    show (JumpUnless s r) = "JUMP-UNLESS @" ++ (fmap toUpper s) ++ " " ++ (show r)
     show (Label s) = "LABEL @" ++ (fmap toUpper s)
     show Nop = "NOP"
-    show (IFalse (Register r)) = "FALSE " ++ (show (Register r))
-    show (IFalse (MetaRegister r)) = "FALSE " ++ (show (MetaRegister r))
-    show (ITrue (Register r)) = "TRUE " ++ (show (Register r))
-    show (ITrue (MetaRegister r)) = "TRUE " ++ (show (MetaRegister r))
-    show (INot (Register r)) = "NOT " ++ (show (Register r))
-    show (INot (MetaRegister r)) = "NOT " ++ (show (MetaRegister r))
-    show (IAnd (Register r0) (Register r1)) = "AND " ++ (show (Register r0)) ++ " " ++ (show (Register r1))
-    show (IAnd (MetaRegister r0) (MetaRegister r1)) = "AND " ++ (show (MetaRegister r0)) ++ " " ++ (show (MetaRegister r1))
-    show (IOr (Register r0) (Register r1)) = "OR " ++ (show (Register r0)) ++ " " ++ (show (Register r1))
-    show (IOr (MetaRegister r0) (MetaRegister r1)) = "OR " ++ (show (MetaRegister r0)) ++ " " ++ (show (MetaRegister r1))
-    show (Move (Register r0) (Register r1)) = "MOVE " ++ (show (Register r0)) ++ " " ++ (show (Register r1))
-    show (Move (MetaRegister r0) (MetaRegister r1)) = "MOVE " ++ (show (MetaRegister r0)) ++ " " ++ (show (MetaRegister r1))
-    show (Exchange (Register r0) (Register r1)) = "EXCHANGE " ++ (show (Register r0)) ++ " " ++ (show (Register r1))
-    show (Exchange (MetaRegister r0) (MetaRegister r1)) = "EXCHANGE " ++ (show (MetaRegister r0)) ++ " " ++ (show (MetaRegister r1))
+    show (IFalse r) = "FALSE " ++ (show r)
+    show (ITrue r) = "TRUE " ++ (show r)
+    show (INot r) = "NOT " ++ (show r)
+    show (IAnd r0 r1) = "AND " ++ (show r0) ++ " " ++ (show r1)
+    show (IOr r0 r1) = "OR " ++ (show r0) ++ " " ++ (show r1)
+    show (Move r0 r1) = "MOVE " ++ (show r0) ++ " " ++ (show r1)
+    show (Exchange r0 r1) = "EXCHANGE " ++ (show r0) ++ " " ++ (show r1)
     show (Pragma s) = "PRAGMA " ++ s
-    show (DefCircuit c) = showDefCircuit c
-    show (CallCircuit c arguments) = showCallCircuit c arguments
+    show (DefCircuit c) = case showDefCircuit c of
+                               Left e -> e
+                               Right c -> c
+    show (CallCircuit c arguments) = case showCallCircuit c arguments of
+                                     Left e -> e
+                                     Right c -> c
 
 --Circuit type
 data Circuit a = Circuit String [Either Quantum (Classical a)] [Instruction a]
 
+type CircuitText = String
+
 --Circuit definition
-showDefCircuit :: (Floating a, Show a, Ord a) => Circuit a -> String
-showDefCircuit (Circuit _ _ []) = []
-showDefCircuit (Circuit name parameters instructions) = "DEFCIRCUIT " ++ (fmap toUpper name) ++ (defCircuitParameters parameters instructions)
+showDefCircuit :: (Floating a, Show a, Ord a) => Circuit a -> Either String CircuitText
+showDefCircuit (Circuit name _ []) = Left ("Error (showDefCircuit): No instructions in circuit " ++ name)
+showDefCircuit (Circuit name parameters instructions) = (Right ("DEFCIRCUIT " ++ (fmap toUpper name))) >>= (defCircuitParameters parameters instructions)
 
-defCircuitParameters :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Instruction a] -> String
-defCircuitParameters [] instructions = ":\n" ++ (defCircuitInstructions instructions)
-defCircuitParameters (Left r@(MetaQubitRegister _) : parameters) instructions = " " ++ (show  r) ++ (defCircuitParameters parameters instructions)
-defCircuitParameters (Right r@(MetaRegister _) : parameters) instructions = " " ++ (show r) ++ (defCircuitParameters parameters instructions)
+defCircuitParameters :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Instruction a] -> CircuitText -> Either String CircuitText
+defCircuitParameters [] instructions circuitText = (Right (circuitText ++ ":")) >>= (defCircuitInstructions instructions)
+defCircuitParameters (Left r@(MetaQubitRegister _) : parameters) instructions circuitText = (Right (circuitText ++ " " ++ (show  r))) >>= (defCircuitParameters parameters instructions)
+defCircuitParameters (Right r@(MetaRegister _) : parameters) instructions circuitText = (Right (circuitText ++ " " ++ (show r))) >>= (defCircuitParameters parameters instructions)
+defCircuitParameters p _ _ = Left ("Error (defCircuitParameters): Type mismatch for parameter " ++ (show p))
 
-circuitInstruction :: (Floating a, Show a, Ord a) => [Instruction a] -> String
-circuitInstruction (instruction : instructions) = "    " ++ (show instruction) ++ "\n" ++ (defCircuitInstructions instructions)
+circuitInstruction :: (Floating a, Show a, Ord a) => [Instruction a] -> CircuitText -> Either String CircuitText
+circuitInstruction (instruction : instructions) circuitText = (Right (circuitText ++ "\n    " ++ (show instruction))) >>= (defCircuitInstructions instructions)
 
-defCircuitInstructions :: (Floating a, Show a, Ord a) => [Instruction a] -> String
-defCircuitInstructions [] = []
-defCircuitInstructions (instruction@(PauliI (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PauliX (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PauliY (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PauliZ (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Hadamard (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions :: (Floating a, Show a, Ord a) => [Instruction a] -> CircuitText -> Either String CircuitText
+defCircuitInstructions [] circuitText = Right circuitText
+defCircuitInstructions (instruction@(PauliI (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PauliX (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PauliY (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PauliZ (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(Phase (RealConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Phase (ComplexConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Phase (MetaRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(Hadamard (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(PhaseS (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PhaseT (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(Phase (RealConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Phase (ComplexConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Phase (MetaRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(CPhase00 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase00 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase00 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(PhaseS (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PhaseT (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(CPhase01 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase01 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase01 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(CPhase00 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase00 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase00 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(CPhase10 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase10 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase10 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(CPhase01 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase01 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase01 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(CPhase (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CPhase (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(CPhase10 (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase10 (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase10 (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(RX (RealConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RX (ComplexConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RX (MetaRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(CPhase (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CPhase (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(RY (RealConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RY (ComplexConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RY (MetaRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(RX (RealConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RX (ComplexConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RX (MetaRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(RZ (RealConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RZ (ComplexConstant _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(RZ (MetaRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(RY (RealConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RY (ComplexConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RY (MetaRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(CNot (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CCNot (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(RZ (RealConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RZ (ComplexConstant _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(RZ (MetaRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(PSwap (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PSwap (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(PSwap (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
+defCircuitInstructions (instruction@(CNot (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CCNot (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
 
-defCircuitInstructions (instruction@(Swap (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(ISwap (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(CSwap (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Measure (MetaQubitRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(MeasureOut (MetaQubitRegister _) (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Reset) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Halt) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Jump _) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(JumpWhen _ (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(JumpUnless _ (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Label _) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Nop) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(IFalse (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(ITrue (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(INot (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(IAnd (MetaRegister _) (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(IOr (MetaRegister _) (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Move (MetaRegister _) (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Exchange (MetaRegister _) (MetaRegister _)) : instructions) = circuitInstruction (instruction : instructions)
-defCircuitInstructions (instruction@(Pragma _) : instructions) = circuitInstruction (instruction : instructions)
---Since circuits are macros, defining recursive circuits or calling circuits inside circuits is forbidden
+defCircuitInstructions (instruction@(PSwap (RealConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PSwap (ComplexConstant _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(PSwap (MetaRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+
+defCircuitInstructions (instruction@(Swap (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(ISwap (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CSwap (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _) (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Measure (MetaQubitRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(MeasureOut (MetaQubitRegister _) (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Reset) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Halt) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Jump _) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(JumpWhen _ (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(JumpUnless _ (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Label _) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Nop) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(IFalse (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(ITrue (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(INot (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(IAnd (MetaRegister _) (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(IOr (MetaRegister _) (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Move (MetaRegister _) (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Exchange (MetaRegister _) (MetaRegister _)) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(Pragma _) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+defCircuitInstructions (instruction@(CallCircuit _ _) : instructions) circuitText = circuitInstruction (instruction : instructions) circuitText
+--Since circuits are macros, defining recursive circuits inside circuits is forbidden
+defCircuitInstructions (instruction : instructions) _ = Left ("Error (defCircuitInstructions): Type mismatch for instruction " ++ (show instruction))
 
 --Circuit call
-showCallCircuit :: (Floating a, Show a, Ord a) => Circuit a -> [Either Quantum (Classical a)] -> String
-showCallCircuit (Circuit name _ _) [] = name
-showCallCircuit (Circuit name parameters _) arguments = name ++ callCircuitArguments parameters arguments
+showCallCircuit :: (Floating a, Show a, Ord a) => Circuit a -> [Either Quantum (Classical a)] -> Either String CircuitText
+showCallCircuit (Circuit name _ _) [] = Right name
+showCallCircuit (Circuit name parameters _) arguments = (Right name) >>= callCircuitArguments parameters arguments
 
-callCircuitArguments :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Either Quantum (Classical a)] -> String
-callCircuitArguments [] _ = []
-callCircuitArguments (Left (MetaQubitRegister _) : parameters) (Left q@(QubitRegister _) : arguments) = " " ++ (show q) ++ callCircuitArguments parameters arguments
-callCircuitArguments (Right (RealConstant _) : parameters) (Right c@(RealConstant _) : arguments) = " " ++ (show c) ++ callCircuitArguments parameters arguments
-callCircuitArguments (Right (ComplexConstant _) : parameters) (Right c@(ComplexConstant _) : arguments) = " " ++ (show c) ++ callCircuitArguments parameters arguments
-callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Register _) : arguments) = " " ++ (show r) ++ callCircuitArguments parameters arguments
-callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Range _ _) : arguments) = " " ++ (show r) ++ callCircuitArguments parameters arguments
+callCircuitArguments :: (Floating a, Show a, Ord a) => [Either Quantum (Classical a)] -> [Either Quantum (Classical a)] -> String -> Either String String
+callCircuitArguments [] [] circuitText = Right circuitText
+callCircuitArguments (Left (MetaQubitRegister _) : parameters) (Left q@(QubitRegister _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show q))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Left (MetaQubitRegister _) : parameters) (Left q@(MetaQubitRegister _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show q))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Right (RealConstant _) : parameters) (Right c@(RealConstant _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show c))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Right (ComplexConstant _) : parameters) (Right c@(ComplexConstant _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show c))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Register _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show r))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(Range _ _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show r))) >>= callCircuitArguments parameters arguments
+callCircuitArguments (Right (MetaRegister _) : parameters) (Right r@(MetaRegister _) : arguments) circuitText = (Right (circuitText ++ " " ++ (show r))) >>= callCircuitArguments parameters arguments
+callCircuitArguments _ (a : arguments) _ = Left ("Error (callCircuitArguments): Type mismatch for argument " ++ (show a))

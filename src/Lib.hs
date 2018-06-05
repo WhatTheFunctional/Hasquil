@@ -29,5 +29,10 @@ compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ DefCircuit bell) >>
           putStrLn (show $ CallCircuit bell [Left (QubitRegister 5), Left (QubitRegister 3)]) >>
           putStrLn (show $ DefCircuit testRXCircuit) >>
-          putStrLn (show $ DefCircuit (xor "xor0")) >>
-          putStrLn (show $ CallCircuit (xor "xor0") [Right (Register 0), Right (Register 1), Right (Register 2)])
+          putStrLn (show $ CallCircuit testRXCircuit [Left (QubitRegister 1)]) >>
+          putStrLn (show $ DefCircuit localXOR) >>
+          putStrLn (show $ CallCircuit localXOR [Right (Register 0), Right (Register 1), Right (Register 2)]) >>
+          putStrLn (show $ DefCircuit localHalfAdder) >>
+          putStrLn (show $ CallCircuit localHalfAdder [Right (Register 0), Right (Register 1), Right (Register 2), Right (Register 3)])
+              where localXOR = xor "xor0"
+                    localHalfAdder = halfAdder localXOR
