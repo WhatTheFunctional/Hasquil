@@ -6,12 +6,8 @@ module Lib (compile) where
 import Data.Complex
 import Register
 import Instruction
-
-bellCircuit :: (Floating a, Show a, Ord a) => Circuit a
-bellCircuit = let parameters@[Left a, Left b] = [Left (MetaQubitRegister "a"), Left (MetaQubitRegister "b")]
-                  instructions = [(Hadamard a),
-                                  (CNot a b)]
-              in Circuit "BELL" parameters instructions
+import ClassicalCircuit
+import QuantumCircuit
 
 testRXCircuit :: (Floating a, Show a, Ord a) => Circuit a
 testRXCircuit = let parameters@[Left a] = [Left (MetaQubitRegister "a")]
@@ -30,6 +26,8 @@ compile = putStrLn "Compiling quantum executable" >>
           putStrLn (show $ PSwap (ComplexConstant (5.0 :+ (-3.2))) (QubitRegister 0) (QubitRegister 1)) >>
           putStrLn (show $ Measure (QubitRegister 4)) >>
           putStrLn (show $ MeasureOut (QubitRegister 4) (Register 5)) >>
-          putStrLn (show $ DefCircuit bellCircuit) >>
-          putStrLn (show $ CallCircuit bellCircuit [Left (QubitRegister 5), Left (QubitRegister 3)]) >>
-          putStrLn (show $ DefCircuit testRXCircuit)
+          putStrLn (show $ DefCircuit bell) >>
+          putStrLn (show $ CallCircuit bell [Left (QubitRegister 5), Left (QubitRegister 3)]) >>
+          putStrLn (show $ DefCircuit testRXCircuit) >>
+          putStrLn (show $ DefCircuit (xor "xor0")) >>
+          putStrLn (show $ CallCircuit (xor "xor0") [Right (Register 0), Right (Register 1), Right (Register 2)])
