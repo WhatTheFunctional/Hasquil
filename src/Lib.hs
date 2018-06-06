@@ -65,5 +65,5 @@ compile = putStrLn "Compiling quantum executable" >>
           let carry = 128
               temp = 129
           in putStrLn (intercalate "\n" (fmap show (addRegisters carry temp 0 32 64))) >>
-          putStrLn (show $ DefCircuit (hadamardRotateXYZ (sqrt 2.0))) >>
-          putStrLn (show $ CallCircuit (hadamardRotateXYZ (sqrt 2.0)) [Left (QubitRegister 0), Left (QubitRegister 1), Right (Register 0), Left (QubitRegister 2)])
+          putStrLn (show $ DefCircuit (hadamardRotateXYZ (0.70710678118 :+ 0.70710678118))) >>
+          putStrLn (show $ CallCircuit (hadamardRotateXYZ (0.70710678118 :+ 0.70710678118)) [Left (QubitRegister 0), Left (QubitRegister 1), Right (Register 0), Left (QubitRegister 2)])
