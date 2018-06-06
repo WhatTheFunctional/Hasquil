@@ -15,13 +15,13 @@ xor = let parameters@[Right a, Right b, Right r] = [Right (MetaRegister "a"),
                                                     Right (MetaRegister "r")]
           instructions = [(Move b r),
                           (IOr a r),
-                          (JumpUnless "xor0" r),
+                          (JumpUnless "XOR0" r),
                           (Move b r),
                           (INot a),
                           (INot r),
                           (IOr a r),
                           (INot a),
-                          (Label "xor0")]
+                          (Label "XOR0")]
       in Circuit "XOR" parameters instructions
 
 --Half adder

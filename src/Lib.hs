@@ -16,6 +16,22 @@ testRXCircuit = let parameters@[Left a] = [Left (MetaQubitRegister "a")]
                     instructions = [(RX (ComplexConstant (5.0 :+ 10.0)) a)]
                 in Circuit "TESTRX" parameters instructions
 
+hadamardRotateXYZ :: (Floating a, Show a, Ord a) => Complex a -> Circuit a
+hadamardRotateXYZ rotation
+    = let parameters@[Left a, Left b, Right r, Left z] = [Left (MetaQubitRegister "a"), Left (MetaQubitRegister "b"), Right (MetaRegister "r"), Left (MetaQubitRegister "z")]
+          instructions = [(Hadamard a),
+                          (MeasureOut a r)] ++
+                          (ifC "HROTXYZTHEN0" "HROTXYZEND0"
+                               r
+                               [(RX (ComplexConstant rotation) z)]
+                               ([(Hadamard b),
+                                 (MeasureOut b r)] ++
+                                (ifC "HROTXYZTHEN1" "HROTXYZEND1"
+                                     r
+                                     [(RY (ComplexConstant rotation) z)]
+                                     [(RZ (ComplexConstant rotation) z)])))
+      in Circuit "HROTXYZ" parameters instructions
+
 compile :: IO ()
 compile = putStrLn "Compiling quantum executable" >>
           --Test registers
@@ -48,4 +64,6 @@ compile = putStrLn "Compiling quantum executable" >>
           --Add [0-31] + [32-63] into [64-95]
           let carry = 128
               temp = 129
-          in putStrLn (intercalate "\n" (fmap show (addRegisters carry temp 0 32 64)))
+          in putStrLn (intercalate "\n" (fmap show (addRegisters carry temp 0 32 64))) >>
+          putStrLn (show $ DefCircuit (hadamardRotateXYZ (sqrt 2.0))) >>
+          putStrLn (show $ CallCircuit (hadamardRotateXYZ (sqrt 2.0)) [Left (QubitRegister 0), Left (QubitRegister 1), Right (Register 0), Left (QubitRegister 2)])

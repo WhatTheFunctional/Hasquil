@@ -2,7 +2,10 @@
 --Copyright Laurence Emms 2018
 
 module Util (loadIntToRegisters,
-             addRegisters) where
+             addRegisters,
+             ifC,
+             whileC,
+             doWhileC) where
 
 import Data.Complex
 import Data.Bits
